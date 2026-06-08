@@ -24,14 +24,14 @@ const FONT_OPTIONS = {
   songti: {
     cssFamily: '"ClippingSongti", "Songti SC", STSong, SimSun, serif',
     pdfPath: "assets/fonts/NotoSerifSC-Regular.ttf",
-    remotePdfPath: "",
+    remotePdfPath: "https://raw.githubusercontent.com/google/fonts/main/ofl/notoserifsc/NotoSerifSC%5Bwght%5D.ttf",
     pdfSubset: true,
     wordFamily: "ClippingSongti, Songti SC, STSong, SimSun, serif",
   },
   heiti: {
     cssFamily: '"ClippingHeiti", SimHei, Heiti SC, sans-serif',
     pdfPath: "assets/fonts/NotoSansSC-Regular.ttf",
-    remotePdfPath: "",
+    remotePdfPath: "https://raw.githubusercontent.com/google/fonts/main/ofl/notosanssc/NotoSansSC%5Bwght%5D.ttf",
     pdfSubset: true,
     wordFamily: "ClippingHeiti, SimHei, Heiti SC, Microsoft YaHei, sans-serif",
   },
@@ -1435,7 +1435,8 @@ async function exportPdfTextBased() {
     setStatus("文字 PDF 已生成。");
   } catch (error) {
     console.error(error);
-    setStatus(error?.friendlyMessage || "文字 PDF 生成失败，请确认所选字体文件已放入 assets/fonts。");
+    const detail = error?.friendlyMessage || error?.message || "";
+    setStatus(detail ? `文字 PDF 生成失败：${detail}` : "文字 PDF 生成失败，请确认所选字体文件已放入 assets/fonts。");
   }
 }
 
@@ -1886,10 +1887,14 @@ async function embedConfiguredFont(pdfDoc, fontKey, embeddedFontCache = new Map(
   if (embeddedFontCache.has(cacheKey)) {
     return embeddedFontCache.get(cacheKey);
   }
-  const bytes = await loadPdfFontBytes(path, config.remotePdfPath);
-  const font = await pdfDoc.embedFont(bytes, { subset });
-  embeddedFontCache.set(cacheKey, font);
-  return font;
+  try {
+    const bytes = await loadPdfFontBytes(path, config.remotePdfPath);
+    const font = await pdfDoc.embedFont(bytes, { subset });
+    embeddedFontCache.set(cacheKey, font);
+    return font;
+  } catch (error) {
+    throwFriendlyPdfError(`${normalizedKey} 字体嵌入失败：${error?.message || "请检查字体文件是否可访问"}`);
+  }
 }
 
 async function loadPdfFontBytes(path, fallbackPath = "") {
@@ -1902,9 +1907,13 @@ async function loadPdfFontBytes(path, fallbackPath = "") {
     return bytes;
   } catch (error) {
     if (!fallbackPath) throw error;
-    const bytes = await loadArrayBuffer(fallbackPath);
-    pdfFontBufferCache.set(path, bytes);
-    return bytes;
+    try {
+      const bytes = await loadArrayBuffer(fallbackPath);
+      pdfFontBufferCache.set(path, bytes);
+      return bytes;
+    } catch (fallbackError) {
+      throw new Error(`${path} 加载失败，备用字体也不可用`);
+    }
   }
 }
 
