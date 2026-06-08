@@ -1,6 +1,24 @@
 @font-face {
+  font-family: "ClippingSongti";
+  src: url("./assets/fonts/ZCOOLXiaoWei-Regular.ttf") format("truetype");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "ClippingHeiti";
+  src: url("./assets/fonts/ZCOOLQingKeHuangYou-Regular.ttf") format("truetype");
+  font-display: swap;
+}
+
+@font-face {
   font-family: "ClippingKaiti";
   src: url("./assets/fonts/LXGWWenKai-Regular.ttf") format("truetype");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "ClippingYuanti";
+  src: url("./assets/fonts/ResourceHanRoundedCN-Regular.ttf") format("truetype");
   font-display: swap;
 }
 

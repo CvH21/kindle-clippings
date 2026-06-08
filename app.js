@@ -22,18 +22,18 @@ const PDF_FONT_FILES = {
 };
 const FONT_OPTIONS = {
   songti: {
-    cssFamily: '"Songti SC", STSong, SimSun, serif',
+    cssFamily: '"ClippingSongti", "Songti SC", STSong, SimSun, serif',
     pdfPath: "assets/fonts/ZCOOLXiaoWei-Regular.ttf",
     remotePdfPath: "https://raw.githubusercontent.com/google/fonts/main/ofl/zcoolxiaowei/ZCOOLXiaoWei-Regular.ttf",
     pdfSubset: true,
-    wordFamily: "Songti SC, STSong, SimSun, serif",
+    wordFamily: "ClippingSongti, Songti SC, STSong, SimSun, serif",
   },
   heiti: {
-    cssFamily: "SimHei, Heiti SC, sans-serif",
+    cssFamily: '"ClippingHeiti", SimHei, Heiti SC, sans-serif',
     pdfPath: "assets/fonts/ZCOOLQingKeHuangYou-Regular.ttf",
     remotePdfPath: "https://raw.githubusercontent.com/google/fonts/main/ofl/zcoolqingkehuangyou/ZCOOLQingKeHuangYou-Regular.ttf",
     pdfSubset: true,
-    wordFamily: "SimHei, Heiti SC, Microsoft YaHei, sans-serif",
+    wordFamily: "ClippingHeiti, SimHei, Heiti SC, Microsoft YaHei, sans-serif",
   },
   kaiti: {
     cssFamily: '"ClippingKaiti", "Kaiti SC", STKaiti, KaiTi, serif',
@@ -43,11 +43,11 @@ const FONT_OPTIONS = {
     wordFamily: "ClippingKaiti, Kaiti SC, STKaiti, KaiTi, serif",
   },
   yuanti: {
-    cssFamily: "Yuanti SC, YouYuan, sans-serif",
-    pdfPath: "assets/fonts/ZCOOLQingKeHuangYou-Regular.ttf",
-    remotePdfPath: "https://raw.githubusercontent.com/google/fonts/main/ofl/zcoolqingkehuangyou/ZCOOLQingKeHuangYou-Regular.ttf",
+    cssFamily: '"ClippingYuanti", Yuanti SC, YouYuan, sans-serif',
+    pdfPath: "assets/fonts/ResourceHanRoundedCN-Regular.ttf",
+    remotePdfPath: "",
     pdfSubset: true,
-    wordFamily: "Yuanti SC, YouYuan, Microsoft YaHei, sans-serif",
+    wordFamily: "ClippingYuanti, Yuanti SC, YouYuan, Microsoft YaHei, sans-serif",
   },
   handwrite: {
     cssFamily: '"ClippingHandwrite", "ClippingKaiti", "Kaiti SC", STKaiti, KaiTi, serif',
@@ -1428,14 +1428,14 @@ async function exportPdfTextBased() {
   }
   try {
     setStatus("正在生成文字 PDF...");
-    const blob = await buildPdfTextBlob();
+    const blob = await buildEmbeddedTextPdfBlob();
     const url = URL.createObjectURL(blob);
     downloadDataUrl(url, `${safeFileName(items[0]?.bookTitle || state.bookInfo.title || "Kindle-Clippings")}-划线排版.pdf`);
     window.setTimeout(() => URL.revokeObjectURL(url), 1200);
     setStatus("文字 PDF 已生成。");
   } catch (error) {
     console.error(error);
-    setStatus(error?.friendlyMessage || "文字 PDF 生成失败，请确认 Noto Serif SC 字体文件已放入 assets/fonts。");
+    setStatus(error?.friendlyMessage || "文字 PDF 生成失败，请确认所选字体文件已放入 assets/fonts。");
   }
 }
 
@@ -1852,6 +1852,9 @@ async function buildNativePdfBlob() {
 }
 
 async function buildEmbeddedTextPdfBlob() {
+  if (!window.PDFLib || !window.fontkit) {
+    throwFriendlyPdfError("PDF 文本导出库尚未加载完成，请稍后再试。");
+  }
   await waitForFonts();
   const { PDFDocument } = window.PDFLib;
   const pdfDoc = await PDFDocument.create();
@@ -2886,5 +2889,5 @@ window.ClippingsExport = {
   exportPdfTextBased,
   buildNativePdfBlob,
   buildPdfTextBlob,
-  buildEmbeddedTextPdfBlob: buildPdfTextBlob,
+  buildEmbeddedTextPdfBlob,
 };

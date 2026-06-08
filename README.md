@@ -9,6 +9,7 @@
 - 数据处理：用户文件只在本地浏览器读取，不上传服务器
 - 本地存储：排版设置和导入内容会保存在当前浏览器的 `localStorage`
 - 主要限制：导出功能依赖浏览器能力、中文字体文件和 CDN 加载状态
+- 文字 PDF：会嵌入当前选择的正文字体，尽量保持和预览一致，并保留文字可选中/可复制
 
 ## 上线文件
 
@@ -64,3 +65,9 @@ README.md
 
 如果用户所在网络无法访问 CDN，导出图片、PDF 或图标可能不可用。公开 Beta 阶段先保留 CDN 方案；正式版建议将这些依赖本地化。
 
+## 字体说明
+
+文字 PDF 使用 `assets/fonts/` 中的本地字体文件。圆体使用 Resource Han Rounded CN Regular，来源于 Resource Han Rounded 项目；该项目说明字体部分采用 SIL Open Font License。
+
+- 项目说明：https://github.com/CyanoHao/Resource-Han-Rounded
+- 字体信息：https://fontmeme.com/fonts/resource-han-rounded-cn-font/
