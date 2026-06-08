@@ -650,7 +650,7 @@ function applyFontKey(fontKey) {
 function getEffectiveTextWeight(fontKey = state.layout.fontKey, weight = state.layout.textWeight) {
   const config = FONT_OPTIONS[fontKey] || FONT_OPTIONS[defaultLayout.fontKey];
   if (!config.supportsBold) return 400;
-  return Number(weight) >= 600 ? 700 : 400;
+  return Number(weight) >= 500 ? 700 : 400;
 }
 
 function normalizeLayoutFont() {
@@ -2049,6 +2049,7 @@ function measureTextNodeForPdf(node, pageRect, background) {
   const element = node.parentElement;
   if (!element || !isElementVisible(element)) return [];
   const style = window.getComputedStyle(element);
+  const role = getPdfTextRole(element);
   const fontKey = inferFontKey(style.fontFamily);
   const fontSize = parseCssPx(style.fontSize, state.layout.fontSize);
   const lineHeight = parseCssLineHeight(style.lineHeight, fontSize);
@@ -2100,7 +2101,12 @@ function measureTextNodeForPdf(node, pageRect, background) {
       fontKey,
       fontWeight,
       color,
+      role,
     }));
+}
+
+function getPdfTextRole(element) {
+  return element.closest("[data-pdf-role]")?.dataset.pdfRole || "";
 }
 
 function getTextNodes(root) {
@@ -2127,11 +2133,14 @@ function isElementVisible(element) {
 }
 
 async function createMeasuredPdfFontRegistry(pdfDoc, measuredPages, embeddedFontCache) {
+  const styleContext = prepareMeasuredPdfTextStyles(measuredPages);
   const requests = new Map();
   measuredPages.forEach((page) => {
     page.texts.forEach((text) => {
       const fontKey = FONT_OPTIONS[text.fontKey] ? text.fontKey : defaultLayout.fontKey;
-      const weight = getEffectiveTextWeight(fontKey, text.fontWeight);
+      const weight = getPdfTextWeight(text, styleContext);
+      text.pdfFontWeight = weight;
+      text.pdfColor = getPdfTextColor(text);
       requests.set(getPdfFontCacheKey(fontKey, weight), { fontKey, weight });
     });
   });
@@ -2155,6 +2164,32 @@ async function createMeasuredPdfFontRegistry(pdfDoc, measuredPages, embeddedFont
   };
 }
 
+function prepareMeasuredPdfTextStyles(measuredPages) {
+  let needsSongtiRegular = false;
+  measuredPages.forEach((page) => {
+    page.texts.forEach((text) => {
+      if (text.fontKey === META_FONT_KEY && text.role !== "quote-text") return;
+      if (text.fontKey === META_FONT_KEY && getEffectiveTextWeight(text.fontKey, text.fontWeight) < 600) {
+        needsSongtiRegular = true;
+      }
+    });
+  });
+  return { preferBoldMeta: !needsSongtiRegular };
+}
+
+function getPdfTextWeight(text, context = {}) {
+  if (["title", "cover-title"].includes(text.role)) return 700;
+  if (text.fontKey === META_FONT_KEY && context.preferBoldMeta && text.role !== "quote-text") return 700;
+  return getEffectiveTextWeight(text.fontKey, text.fontWeight);
+}
+
+function getPdfTextColor(text) {
+  if (["title", "cover-title"].includes(text.role)) return darkenCssColor(text.color, 0.16);
+  if (text.role === "quote-text") return darkenCssColor(text.color, text.fontWeight >= 600 ? 0.16 : 0.1);
+  if (text.role === "marker") return darkenCssColor(text.color, 0.12);
+  return darkenCssColor(text.color, 0.04);
+}
+
 function getPdfFontCacheKey(fontKey, weight) {
   return `${fontKey}:${Number(weight) >= 600 ? 700 : 400}`;
 }
@@ -2166,7 +2201,7 @@ function drawMeasuredPdfPage(pdfPage, pageData, spec, pageWidthPt, pageHeightPt,
     drawEmbeddedRect(pdfPage, rect.x, rect.y, rect.width, rect.height, rect.color, scale, pageHeightPt);
   });
   pageData.texts.forEach((text) => {
-    const font = fontRegistry.get(text.fontKey, text.fontWeight);
+    const font = fontRegistry.get(text.fontKey, text.pdfFontWeight ?? text.fontWeight);
     drawMeasuredText(pdfPage, text, scale, pageHeightPt, font);
   });
 }
@@ -2177,7 +2212,7 @@ function drawMeasuredText(pdfPage, text, scale, pageHeightPt, font) {
     y: pageHeightPt - (text.y + text.baselineOffset) * scale,
     size: text.fontSize * scale,
     font,
-    color: toPdfRgb(text.color),
+    color: toPdfRgb(text.pdfColor || text.color),
   });
 }
 
@@ -2202,6 +2237,12 @@ function flattenCssColor(color, background = "#ffffff") {
   const bg = parseColor(background);
   const alpha = fg.a ?? 1;
   return `rgb(${Math.round(fg.r * alpha + bg.r * (1 - alpha))}, ${Math.round(fg.g * alpha + bg.g * (1 - alpha))}, ${Math.round(fg.b * alpha + bg.b * (1 - alpha))})`;
+}
+
+function darkenCssColor(color, amount = 0) {
+  const { r, g, b } = parseColor(color);
+  const ratio = Math.max(0, Math.min(1, amount));
+  return `rgb(${Math.round(r * (1 - ratio))}, ${Math.round(g * (1 - ratio))}, ${Math.round(b * (1 - ratio))})`;
 }
 
 async function embedConfiguredFont(pdfDoc, fontKey, embeddedFontCache = new Map(), weight = 400) {
