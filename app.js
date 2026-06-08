@@ -23,15 +23,15 @@ const PDF_FONT_FILES = {
 const FONT_OPTIONS = {
   songti: {
     cssFamily: '"ClippingSongti", "Songti SC", STSong, SimSun, serif',
-    pdfPath: "assets/fonts/ZCOOLXiaoWei-Regular.ttf",
-    remotePdfPath: "https://raw.githubusercontent.com/google/fonts/main/ofl/zcoolxiaowei/ZCOOLXiaoWei-Regular.ttf",
+    pdfPath: "assets/fonts/NotoSerifSC-Regular.ttf",
+    remotePdfPath: "",
     pdfSubset: true,
     wordFamily: "ClippingSongti, Songti SC, STSong, SimSun, serif",
   },
   heiti: {
     cssFamily: '"ClippingHeiti", SimHei, Heiti SC, sans-serif',
-    pdfPath: "assets/fonts/ZCOOLQingKeHuangYou-Regular.ttf",
-    remotePdfPath: "https://raw.githubusercontent.com/google/fonts/main/ofl/zcoolqingkehuangyou/ZCOOLQingKeHuangYou-Regular.ttf",
+    pdfPath: "assets/fonts/NotoSansSC-Regular.ttf",
+    remotePdfPath: "",
     pdfSubset: true,
     wordFamily: "ClippingHeiti, SimHei, Heiti SC, Microsoft YaHei, sans-serif",
   },
@@ -2051,25 +2051,28 @@ function wrapPdfTextToLines(text, maxWidthPx, layout, font, scale) {
 function drawEmbeddedMarker(pdfPage, x, y, height, scale, pageHeightPt, theme) {
   const style = state.layout.bulletStyle;
   const markerColor = theme.marker;
+  const bulletWidth = state.layout.showBullets ? 22 : 0;
+  const markerCenterX = x + bulletWidth * 0.5;
+  const markerCenterY = y + state.layout.fontSize * 0.52;
+  const markerSize = Math.max(3.2, Math.min(5.6, state.layout.fontSize * 0.24));
   if (style === "bar") {
-    drawEmbeddedRect(pdfPage, x + 9, y + 7, 4, Math.max(18, height - 14), markerColor, scale, pageHeightPt, 0.9);
+    drawEmbeddedRect(pdfPage, markerCenterX - 1.4, y + 7, 2.8, Math.max(18, height - 14), markerColor, scale, pageHeightPt, 0.9);
     return;
   }
   if (style === "none") return;
-  const cy = y + state.layout.fontSize * 0.52;
   if (style === "square") {
-    drawEmbeddedRect(pdfPage, x + 8, cy - 4, 8, 8, markerColor, scale, pageHeightPt, 0.9);
+    drawEmbeddedRect(pdfPage, markerCenterX - markerSize * 0.5, markerCenterY - markerSize * 0.5, markerSize, markerSize, markerColor, scale, pageHeightPt, 0.9);
     return;
   }
   if (style === "diamond") {
-    drawEmbeddedDiamond(pdfPage, x + 12, cy, 5, markerColor, scale, pageHeightPt);
+    drawEmbeddedDiamond(pdfPage, markerCenterX, markerCenterY, markerSize * 0.58, markerColor, scale, pageHeightPt);
     return;
   }
   if (style === "triangle") {
-    drawEmbeddedTriangle(pdfPage, x + 8, cy - 5, 10, 10, markerColor, scale, pageHeightPt);
+    drawEmbeddedTriangle(pdfPage, markerCenterX - markerSize * 0.48, markerCenterY - markerSize * 0.55, markerSize * 1.12, markerSize * 1.12, markerColor, scale, pageHeightPt);
     return;
   }
-  drawEmbeddedCircle(pdfPage, x + 12, cy, 4.2, markerColor, scale, pageHeightPt);
+  drawEmbeddedCircle(pdfPage, markerCenterX, markerCenterY, markerSize * 0.42, markerColor, scale, pageHeightPt);
 }
 
 function drawEmbeddedText(pdfPage, text, xPx, yPx, sizePx, color, scale, pageHeightPt, font, options = {}) {

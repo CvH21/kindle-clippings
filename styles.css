@@ -1,12 +1,12 @@
 @font-face {
   font-family: "ClippingSongti";
-  src: url("./assets/fonts/ZCOOLXiaoWei-Regular.ttf") format("truetype");
+  src: url("./assets/fonts/NotoSerifSC-Regular.ttf") format("truetype");
   font-display: swap;
 }
 
 @font-face {
   font-family: "ClippingHeiti";
-  src: url("./assets/fonts/ZCOOLQingKeHuangYou-Regular.ttf") format("truetype");
+  src: url("./assets/fonts/NotoSansSC-Regular.ttf") format("truetype");
   font-display: swap;
 }
 
