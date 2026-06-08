@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Clippings | Kindle 划线排版</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
+    <script src="./app.js" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-name">Kindle Clippings</span>
+        <span class="beta-badge">公开 Beta</span>
+      </div>
+      <div class="export-actions">
+        <button class="zoom-btn" id="zoomOut" type="button" title="缩小">
+          <i data-lucide="minus"></i>
+        </button>
+        <span class="zoom-value" id="zoomValue">85%</span>
+        <button class="zoom-btn" id="zoomIn" type="button" title="放大">
+          <i data-lucide="plus"></i>
+        </button>
+        <button class="action-btn" id="exportPng" type="button">
+          <i data-lucide="image"></i>
+          <span>导出图片</span>
+        </button>
+        <button class="action-btn" id="exportPdf" type="button">
+          <i data-lucide="file-text"></i>
+          <span>文字 PDF</span>
+        </button>
+        <button class="action-btn" id="exportImagePdf" type="button">
+          <i data-lucide="file-image"></i>
+          <span>高清 PDF</span>
+        </button>
+        <button class="action-btn" id="exportWord" type="button">
+          <i data-lucide="file-type"></i>
+          <span>Word</span>
+        </button>
+        <button class="action-btn" id="exportMarkdown" type="button">
+          <i data-lucide="file-down"></i>
+          <span>Markdown</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="panel settings-panel" aria-label="排版设置">
+        <section class="panel-section">
+          <h2><i data-lucide="square"></i>页面规格</h2>
+          <label class="select-wrap">
+            <select id="pageSize">
+              <option value="A4">A4 (210 × 297 mm)</option>
+              <option value="3:4">3:4 竖版</option>
+              <option value="9:16">9:16 竖版</option>
+              <option value="custom">自定义比例</option>
+            </select>
+            <i data-lucide="chevron-down"></i>
+          </label>
+          <div class="ratio-grid is-hidden" id="customRatioFields">
+            <label><span>宽</span><input id="customRatioW" type="number" min="1" value="3" /></label>
+            <label><span>高</span><input id="customRatioH" type="number" min="1" value="4" /></label>
+          </div>
+          <div class="margin-grid">
+            <label><span>上</span><input id="marginTop" type="number" min="0" value="25" /></label>
+            <label><span>下</span><input id="marginBottom" type="number" min="0" value="25" /></label>
+            <label><span>左</span><input id="marginLeft" type="number" min="0" value="25" /></label>
+            <label><span>右</span><input id="marginRight" type="number" min="0" value="25" /></label>
+          </div>
+          <button class="ghost-btn" id="resetMargins" type="button">
+            <i data-lucide="rotate-ccw"></i>
+            恢复默认页边距 (25mm)
+          </button>
+          <label class="toggle-row">
+            <span>显示封面页</span>
+            <input id="showCoverPage" type="checkbox" />
+          </label>
+          <div class="field-group">
+            <span class="field-label">页眉模式</span>
+            <div class="mode-switch header-mode-switch" id="headerModeOptions">
+              <button data-header-mode="repeat" type="button">每页重复标题</button>
+              <button data-header-mode="first" type="button">仅首页显示标题</button>
+              <button class="selected" data-header-mode="compact" type="button">首页大标题 + 后续极简页眉</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <h2><i data-lucide="notebook-tabs"></i>导出模式</h2>
+          <div class="mode-switch" id="exportModeOptions">
+            <button class="selected" data-mode="excerpt" type="button">纯摘录模式</button>
+            <button data-mode="notes" type="button">读书笔记模式</button>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <h2><i data-lucide="sliders-horizontal"></i>布局调整</h2>
+          <div class="range-row">
+            <label for="fontSize">字号</label>
+            <input id="fontSize" type="range" min="14" max="34" value="20" />
+            <output id="fontSizeLabel">20px</output>
+          </div>
+          <div class="range-row">
+            <label for="lineHeight">行高</label>
+            <input id="lineHeight" type="range" min="1.2" max="2.4" step="0.1" value="1.8" />
+            <output id="lineHeightLabel">1.8</output>
+          </div>
+          <div class="range-row">
+            <label for="paragraphGap">段间距</label>
+            <input id="paragraphGap" type="range" min="8" max="48" value="20" />
+            <output id="paragraphGapLabel">20px</output>
+          </div>
+          <div class="range-row">
+            <label for="textWeight">文字深浅</label>
+            <input id="textWeight" type="range" min="300" max="700" step="100" value="400" />
+            <output id="textWeightLabel">常规</output>
+          </div>
+          <button class="ghost-btn" id="resetLayout" type="button">
+            <i data-lucide="rotate-ccw"></i>
+            恢复默认排版
+          </button>
+        </section>
+
+        <section class="panel-section">
+          <div class="switch-heading">
+            <h2><i data-lucide="pilcrow"></i>段落标记</h2>
+            <label class="switch">
+              <input id="showBullets" type="checkbox" checked />
+              <span></span>
+            </label>
+          </div>
+          <div class="segmented icon-grid" id="bulletOptions">
+            <button data-bullet="square" type="button" title="方块">■</button>
+            <button class="selected" data-bullet="circle" type="button" title="圆点">●</button>
+            <button data-bullet="diamond" type="button" title="菱形">◆</button>
+            <button data-bullet="triangle" type="button" title="三角">▶</button>
+            <button data-bullet="bar" type="button" title="段落竖线">┃</button>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <h2><i data-lucide="type"></i>字体</h2>
+          <div class="segmented wrap" id="fontOptions">
+            <button data-font-key="heiti" type="button">黑体</button>
+            <button class="selected" data-font-key="songti" type="button">宋体</button>
+            <button data-font-key="kaiti" type="button">楷体</button>
+            <button data-font-key="yuanti" type="button">圆体</button>
+            <button data-font-key="handwrite" type="button">手写</button>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <h2><i data-lucide="palette"></i>背景颜色</h2>
+          <div class="theme-grid" id="themeOptions">
+            <button class="selected" data-theme="white" type="button">简约白</button>
+            <button data-theme="paper" type="button">信纸黄</button>
+            <button data-theme="green" type="button">护眼绿</button>
+            <button data-theme="dark" type="button">夜间黑</button>
+          </div>
+        </section>
+      </aside>
+
+      <section class="panel input-panel" aria-label="划线内容">
+        <div class="book-form">
+          <label>
+            <span>书名</span>
+            <input id="bookTitle" type="text" placeholder="百年孤独" />
+          </label>
+          <label>
+            <span>作者</span>
+            <input id="bookAuthor" type="text" placeholder="加西亚 · 马尔克斯" />
+          </label>
+        </div>
+
+        <label class="import-strip" for="fileInput">
+          <input id="fileInput" type="file" accept=".txt,text/plain" />
+          <i data-lucide="upload"></i>
+          <span>导入 Kindle 原始笔记</span>
+        </label>
+
+        <div class="list-toolbar">
+          <strong>划线内容</strong>
+          <label class="search-box">
+            <i data-lucide="search"></i>
+            <input id="searchInput" type="search" placeholder="搜索..." />
+          </label>
+          <button id="addClipping" type="button"><i data-lucide="plus"></i>添加</button>
+          <button id="clearClippings" type="button"><i data-lucide="trash"></i>清空</button>
+        </div>
+
+        <div class="status-line" id="statusLine">可导入文件，也可以手动添加划线。</div>
+        <div class="import-stats" id="importStats"></div>
+        <div class="clipping-list" id="clippingList"></div>
+      </section>
+
+      <section class="preview-shell" aria-label="实时预览">
+        <span class="preview-label">实时预览</span>
+        <div class="paper-wrap" id="paperWrap">
+          <div class="paper-pages" id="paperPages"></div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
