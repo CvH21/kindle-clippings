@@ -8,6 +8,7 @@ const STORAGE_KEY = "kindle-clippings-exporter-state-v2";
 const PNG_CAPTURE_SCALE = 2;
 const PDF_CAPTURE_SCALE = 1.45;
 const PDF_JPEG_QUALITY = 0.86;
+const TEXT_PDF_CAPTURE_SCALE = 2;
 const META_FONT_KEY = "songti";
 const PDF_A4_SPEC = PAGE_PRESETS.A4;
 const PDF_FONT_FILES = {
@@ -1877,7 +1878,7 @@ async function buildNativePdfBlob() {
 }
 
 async function buildEmbeddedTextPdfBlob() {
-  if (!window.PDFLib || !window.fontkit) {
+  if (!window.PDFLib || !window.fontkit || !window.html2canvas) {
     throwFriendlyPdfError("PDF 文本导出库尚未加载完成，请稍后再试。");
   }
   await waitForFonts();
@@ -1890,20 +1891,65 @@ async function buildEmbeddedTextPdfBlob() {
   const spec = getPageSpec();
   const pageWidthPt = mmToPt(spec.pdf[0]);
   const pageHeightPt = mmToPt(spec.pdf[1]);
-  const measuredPages = await measurePreviewPagesForPdf(spec);
+  const measuredPages = await captureMeasuredPreviewPagesForPdf(spec);
   if (!measuredPages.length) {
     throwFriendlyPdfError("没有可导出的分页内容。");
   }
   const embeddedFontCache = new Map();
-  const fontRegistry = await createMeasuredPdfFontRegistry(pdfDoc, measuredPages, embeddedFontCache);
+  const hiddenTextFont = await embedConfiguredFont(pdfDoc, META_FONT_KEY, embeddedFontCache, 400, true);
 
-  measuredPages.forEach((pageData) => {
+  for (const pageData of measuredPages) {
     const pdfPage = pdfDoc.addPage([pageWidthPt, pageHeightPt]);
-    drawMeasuredPdfPage(pdfPage, pageData, spec, pageWidthPt, pageHeightPt, fontRegistry);
-  });
+    const image = await pdfDoc.embedPng(pageData.imageData);
+    pdfPage.drawImage(image, {
+      x: 0,
+      y: 0,
+      width: pageWidthPt,
+      height: pageHeightPt,
+    });
+    drawHiddenTextLayer(pdfPage, pageData, spec, pageWidthPt, pageHeightPt, hiddenTextFont);
+  }
 
   const bytes = await pdfDoc.save({ useObjectStreams: true });
   return new Blob([bytes], { type: "application/pdf" });
+}
+
+async function captureMeasuredPreviewPagesForPdf(spec) {
+  if (!getPageElements().length && state.pages.length) {
+    renderPreview();
+    await waitForFonts();
+    await nextFrame();
+  }
+  const measuredPages = [];
+  const pageElements = getPageElements();
+  for (const pageElement of pageElements) {
+    const { page, cleanup } = createExportPageClone(pageElement, spec);
+    await waitForFonts();
+    await nextFrame();
+    await nextFrame();
+    try {
+      const measuredPage = measurePdfPageFromElement(page);
+      const canvas = await window.html2canvas(page, {
+        backgroundColor: null,
+        scale: TEXT_PDF_CAPTURE_SCALE,
+        useCORS: true,
+        allowTaint: false,
+        windowWidth: spec.width,
+        windowHeight: spec.height,
+        width: spec.width,
+        height: spec.height,
+        scrollX: 0,
+        scrollY: 0,
+      });
+      measuredPages.push({
+        ...measuredPage,
+        imageData: canvas.toDataURL("image/png"),
+      });
+    } finally {
+      cleanup();
+    }
+  }
+  return measuredPages;
 }
 
 async function measurePreviewPagesForPdf(spec) {
@@ -2206,6 +2252,21 @@ function drawMeasuredPdfPage(pdfPage, pageData, spec, pageWidthPt, pageHeightPt,
   });
 }
 
+function drawHiddenTextLayer(pdfPage, pageData, spec, pageWidthPt, pageHeightPt, font) {
+  const scale = pageWidthPt / spec.width;
+  pageData.texts.forEach((text) => {
+    if (!text.text) return;
+    pdfPage.drawText(String(text.text), {
+      x: text.x * scale,
+      y: pageHeightPt - (text.y + text.baselineOffset) * scale,
+      size: text.fontSize * scale,
+      font,
+      color: toPdfRgb("#000000"),
+      opacity: 0,
+    });
+  });
+}
+
 function drawMeasuredText(pdfPage, text, scale, pageHeightPt, font) {
   pdfPage.drawText(String(text.text || ""), {
     x: text.x * scale,
@@ -2245,13 +2306,13 @@ function darkenCssColor(color, amount = 0) {
   return `rgb(${Math.round(r * (1 - ratio))}, ${Math.round(g * (1 - ratio))}, ${Math.round(b * (1 - ratio))})`;
 }
 
-async function embedConfiguredFont(pdfDoc, fontKey, embeddedFontCache = new Map(), weight = 400) {
+async function embedConfiguredFont(pdfDoc, fontKey, embeddedFontCache = new Map(), weight = 400, forceSubset = null) {
   const normalizedKey = FONT_OPTIONS[fontKey] ? fontKey : defaultLayout.fontKey;
   const config = FONT_OPTIONS[normalizedKey];
   const useBold = Number(weight) >= 600 && config.supportsBold && config.pdfBoldPath;
   const path = useBold ? config.pdfBoldPath : config.pdfPath || FONT_OPTIONS.songti.pdfPath;
   const fallbackPath = useBold ? config.remotePdfBoldPath : config.remotePdfPath;
-  const subset = config.pdfSubset !== false;
+  const subset = forceSubset === null ? config.pdfSubset !== false : Boolean(forceSubset);
   const cacheKey = `${path}__${subset ? "subset" : "full"}`;
   if (embeddedFontCache.has(cacheKey)) {
     return embeddedFontCache.get(cacheKey);
