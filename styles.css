@@ -186,9 +186,15 @@ button {
 }
 
 i[data-lucide] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 16px;
   height: 16px;
   stroke-width: 2.2;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
 }
 
 .workspace {
@@ -539,7 +545,14 @@ input[type="range"] {
   outline: 0;
 }
 
-.import-strip {
+.import-actions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  background: var(--accent);
+}
+
+.import-strip,
+.import-paste-toggle {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -548,12 +561,60 @@ input[type="range"] {
   background: var(--accent);
   color: #fff;
   font-size: 13px;
-  font-weight: 900;
+  font-weight: 500;
   cursor: pointer;
+}
+
+.import-paste-toggle {
+  min-width: 116px;
+  border: 0;
+  border-left: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 0;
 }
 
 .import-strip input {
   display: none;
+}
+
+.paste-import-panel {
+  display: none;
+  padding: 10px;
+  border-bottom: 1px solid var(--line);
+  background: #f8f4ed;
+}
+
+.paste-import-panel.visible {
+  display: block;
+}
+
+.paste-import-panel textarea {
+  display: block;
+  width: 100%;
+  min-height: 132px;
+  resize: vertical;
+  border: 1px solid #d2c7b8;
+  border-radius: var(--radius);
+  padding: 9px 10px;
+  background: #fffdf9;
+  color: #2f291f;
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.5;
+  outline: 0;
+}
+
+.paste-import-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.paste-import-actions button {
+  min-height: 30px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .list-toolbar {

@@ -19,26 +19,26 @@
       </div>
       <div class="export-actions">
         <button class="zoom-btn" id="zoomOut" type="button" title="缩小">
-          <i data-lucide="minus"></i>
+          <i data-lucide="minus">−</i>
         </button>
         <span class="zoom-value" id="zoomValue">85%</span>
         <button class="zoom-btn" id="zoomIn" type="button" title="放大">
-          <i data-lucide="plus"></i>
+          <i data-lucide="plus">+</i>
         </button>
         <button class="action-btn" id="exportPng" type="button">
-          <i data-lucide="image"></i>
+          <i data-lucide="image">图</i>
           <span>导出图片</span>
         </button>
         <button class="action-btn" id="exportPdf" type="button">
-          <i data-lucide="file-text"></i>
+          <i data-lucide="file-text">PDF</i>
           <span>PDF</span>
         </button>
         <button class="action-btn" id="exportWord" type="button">
-          <i data-lucide="file-type"></i>
+          <i data-lucide="file-type">W</i>
           <span>Word</span>
         </button>
         <button class="action-btn" id="exportMarkdown" type="button">
-          <i data-lucide="file-down"></i>
+          <i data-lucide="file-down">M</i>
           <span>Markdown</span>
         </button>
       </div>
@@ -172,11 +172,24 @@
           </label>
         </div>
 
-        <label class="import-strip" for="fileInput">
-          <input id="fileInput" type="file" accept=".txt,text/plain" />
-          <i data-lucide="upload"></i>
-          <span>导入 Kindle 原始笔记</span>
-        </label>
+        <div class="import-actions">
+          <label class="import-strip" for="fileInput">
+            <input id="fileInput" type="file" accept=".txt,text/plain" />
+            <i data-lucide="upload">↑</i>
+            <span>导入 Kindle 原始笔记</span>
+          </label>
+          <button class="import-paste-toggle" id="showPasteImport" type="button">
+            <i data-lucide="clipboard-paste">粘</i>
+            <span>粘贴文本</span>
+          </button>
+        </div>
+        <div class="paste-import-panel" id="pasteImportPanel">
+          <textarea id="pasteImportText" placeholder="粘贴 Kindle My Clippings.txt 的原始内容"></textarea>
+          <div class="paste-import-actions">
+            <button id="parsePastedImport" type="button">解析粘贴内容</button>
+            <button id="cancelPastedImport" type="button">取消</button>
+          </div>
+        </div>
 
         <div class="list-toolbar">
           <strong>划线内容</strong>
@@ -188,7 +201,7 @@
           <button id="clearClippings" type="button"><i data-lucide="trash"></i>清空</button>
         </div>
 
-        <div class="status-line" id="statusLine">可导入文件，也可以手动添加划线。</div>
+        <div class="status-line" id="statusLine">可导入文件、粘贴原文，也可以手动添加划线。</div>
         <div class="import-stats" id="importStats"></div>
         <div class="clipping-list" id="clippingList"></div>
       </section>

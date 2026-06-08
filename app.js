@@ -110,9 +110,9 @@ document.addEventListener("DOMContentLoaded", () => {
   bindControls();
   loadState();
   renderAll();
-  if (window.lucide) {
-    window.lucide.createIcons();
-  }
+  renderIcons();
+  window.setTimeout(renderIcons, 250);
+  window.setTimeout(renderIcons, 900);
 });
 
 function cacheElements() {
@@ -120,6 +120,11 @@ function cacheElements() {
     "bookTitle",
     "bookAuthor",
     "fileInput",
+    "showPasteImport",
+    "pasteImportPanel",
+    "pasteImportText",
+    "parsePastedImport",
+    "cancelPastedImport",
     "searchInput",
     "addClipping",
     "clearClippings",
@@ -179,6 +184,9 @@ function bindControls() {
   });
 
   els.fileInput.addEventListener("change", handleFileImport);
+  els.showPasteImport.addEventListener("click", togglePasteImport);
+  els.cancelPastedImport.addEventListener("click", hidePasteImport);
+  els.parsePastedImport.addEventListener("click", handlePastedImport);
   els.searchInput.addEventListener("input", () => {
     state.search = els.searchInput.value.trim();
     state.statusMode = "count";
@@ -466,35 +474,7 @@ function handleFileImport(event) {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = () => {
-    try {
-      const parsed = parseKindleClippings(String(reader.result || ""));
-      const deduped = deduplicateHighlights(parsed.items);
-      parsed.stats.dedupedCount = deduped.items.length;
-      parsed.stats.duplicateCount = deduped.duplicateCount;
-      state.importStats = parsed.stats;
-      state.clippings = deduped.items;
-      state.search = "";
-      state.statusMode = "notice";
-      els.searchInput.value = "";
-      if (!deduped.items.length) {
-        state.selectedId = "";
-        state.bookInfo = { title: "", author: "" };
-        setStatus("没有识别到有效划线，请确认文件内容来自 My Clippings.txt。");
-        renderAll();
-        saveState();
-        return;
-      }
-      selectClipping(deduped.items[0].id, false);
-      setStatus(buildImportStatus(deduped.items, parsed.stats));
-      renderAll();
-      saveState();
-    } catch (error) {
-      state.importStats = null;
-      state.statusMode = "notice";
-      setStatus("导入时遇到问题，请检查文件是否为 Kindle 的 My Clippings.txt。");
-      renderImportStats();
-      console.error(error);
-    }
+    importRawClippingsText(String(reader.result || ""), "file");
   };
   reader.onerror = () => {
     state.statusMode = "notice";
@@ -503,6 +483,63 @@ function handleFileImport(event) {
   };
   reader.readAsText(file, "utf-8");
   event.target.value = "";
+}
+
+function togglePasteImport() {
+  const visible = els.pasteImportPanel.classList.toggle("visible");
+  if (visible) {
+    els.pasteImportText.focus();
+  }
+}
+
+function hidePasteImport() {
+  els.pasteImportPanel.classList.remove("visible");
+}
+
+function handlePastedImport() {
+  const rawText = els.pasteImportText.value.trim();
+  if (!rawText) {
+    state.statusMode = "notice";
+    setStatus("请先粘贴 Kindle My Clippings.txt 的原始内容。");
+    return;
+  }
+  importRawClippingsText(rawText, "paste");
+}
+
+function importRawClippingsText(rawText, source = "file") {
+  try {
+    const parsed = parseKindleClippings(String(rawText || ""));
+    const deduped = deduplicateHighlights(parsed.items);
+    parsed.stats.dedupedCount = deduped.items.length;
+    parsed.stats.duplicateCount = deduped.duplicateCount;
+    state.importStats = parsed.stats;
+    state.clippings = deduped.items;
+    state.search = "";
+    state.statusMode = "notice";
+    els.searchInput.value = "";
+    if (!deduped.items.length) {
+      state.selectedId = "";
+      state.bookInfo = { title: "", author: "" };
+      setStatus("没有识别到有效划线，请确认内容来自 Kindle My Clippings.txt。");
+      renderAll();
+      saveState();
+      return;
+    }
+    selectClipping(deduped.items[0].id, false);
+    setStatus(buildImportStatus(deduped.items, parsed.stats));
+    if (source === "paste") {
+      els.pasteImportText.value = "";
+      hidePasteImport();
+    }
+    renderAll();
+    saveState();
+  } catch (error) {
+    state.importStats = null;
+    state.statusMode = "notice";
+    setStatus("导入时遇到问题，请检查内容是否来自 Kindle My Clippings.txt。");
+    renderImportStats();
+    console.error(error);
+  }
 }
 
 function buildImportStatus(items, stats = {}) {
@@ -664,6 +701,12 @@ function inferFontKey(fontFamily = "") {
   return "songti";
 }
 
+function renderIcons() {
+  if (window.lucide) {
+    window.lucide.createIcons();
+  }
+}
+
 function renderList() {
   renderHighlightList();
 }
@@ -676,13 +719,13 @@ function renderHighlightList() {
       <div class="empty-state">
         <div>
           <i data-lucide="file"></i>
-          <div>点击上方「导入 Kindle 原始笔记」</div>
-          <div>或点「添加」手动输入</div>
+          <div>点击上方导入文件或粘贴原文</div>
+          <div>也可以点「添加」手动输入</div>
           <div>可拖动排序，点 × 删除</div>
         </div>
       </div>
     `;
-    if (window.lucide) window.lucide.createIcons();
+    renderIcons();
     renderStatusCount();
     return;
   }
@@ -799,7 +842,7 @@ function renderHighlightList() {
     els.clippingList.appendChild(card);
   });
   });
-  if (window.lucide) window.lucide.createIcons();
+  renderIcons();
   renderStatusCount();
 }
 

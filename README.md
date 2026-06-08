@@ -1,12 +1,12 @@
 # Kindle Clippings
 
-公开 Beta 版的 Kindle 划线排版工具。它可以在浏览器里导入 Kindle `My Clippings.txt`，整理划线内容，并导出高分辨率 PNG、PDF、Word 和 Markdown。
+公开 Beta 版的 Kindle 划线排版工具。它可以在浏览器里导入或粘贴 Kindle `My Clippings.txt`，整理划线内容，并导出高分辨率 PNG、PDF、Word 和 Markdown。
 
 ## 当前状态
 
 - 版本阶段：公开 Beta
 - 应用形态：纯前端静态网页
-- 数据处理：用户文件只在本地浏览器读取，不上传服务器
+- 数据处理：用户文件和粘贴文本只在本地浏览器读取，不上传服务器
 - 本地存储：排版设置和导入内容会保存在当前浏览器的 `localStorage`
 - 主要限制：导出功能依赖浏览器能力、中文字体文件和 CDN 加载状态
 - PNG：按 4 倍倍率导出，适合放大查看和分享
@@ -48,7 +48,7 @@ README.md
 ## 上线前验收
 
 - 打开部署网址，确认页面样式、图标和中文字体正常。
-- 导入一份 Kindle `My Clippings.txt`，确认能识别书名、作者、划线数量和分页。
+- 导入或粘贴一份 Kindle `My Clippings.txt`，确认能识别书名、作者、划线数量和分页。
 - 测试导出 Markdown、Word、高分辨率 PNG 和 PDF。
 - 至少在 Chrome 和 Safari 各测一次。
 - 不导入内容时点击各导出按钮，应显示“没有可导出内容”一类提示。
