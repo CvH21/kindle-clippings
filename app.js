@@ -24,36 +24,45 @@ const FONT_OPTIONS = {
   songti: {
     cssFamily: '"ClippingSongti", "Songti SC", STSong, SimSun, serif',
     pdfPath: "assets/fonts/NotoSerifSC-Regular.ttf",
+    pdfBoldPath: "assets/fonts/NotoSerifSC-Bold.ttf",
     remotePdfPath: "https://raw.githubusercontent.com/google/fonts/main/ofl/notoserifsc/NotoSerifSC%5Bwght%5D.ttf",
-    pdfSubset: true,
+    remotePdfBoldPath: "https://raw.githubusercontent.com/google/fonts/main/ofl/notoserifsc/NotoSerifSC%5Bwght%5D.ttf",
+    pdfSubset: false,
+    supportsBold: true,
     wordFamily: "ClippingSongti, Songti SC, STSong, SimSun, serif",
   },
   heiti: {
     cssFamily: '"ClippingHeiti", SimHei, Heiti SC, sans-serif',
     pdfPath: "assets/fonts/NotoSansSC-Regular.ttf",
+    pdfBoldPath: "assets/fonts/NotoSansSC-Bold.ttf",
     remotePdfPath: "https://raw.githubusercontent.com/google/fonts/main/ofl/notosanssc/NotoSansSC%5Bwght%5D.ttf",
-    pdfSubset: true,
+    remotePdfBoldPath: "https://raw.githubusercontent.com/google/fonts/main/ofl/notosanssc/NotoSansSC%5Bwght%5D.ttf",
+    pdfSubset: false,
+    supportsBold: true,
     wordFamily: "ClippingHeiti, SimHei, Heiti SC, Microsoft YaHei, sans-serif",
   },
   kaiti: {
     cssFamily: '"ClippingKaiti", "Kaiti SC", STKaiti, KaiTi, serif',
     pdfPath: "assets/fonts/LXGWWenKai-Regular.ttf",
     remotePdfPath: "https://cdn.jsdelivr.net/npm/lxgwwenkai-web@0.1.2/LXGWWenKai-Regular.ttf",
-    pdfSubset: true,
+    pdfSubset: false,
+    supportsBold: false,
     wordFamily: "ClippingKaiti, Kaiti SC, STKaiti, KaiTi, serif",
   },
   yuanti: {
     cssFamily: '"ClippingYuanti", Yuanti SC, YouYuan, sans-serif',
     pdfPath: "assets/fonts/ResourceHanRoundedCN-Regular.ttf",
     remotePdfPath: "",
-    pdfSubset: true,
+    pdfSubset: false,
+    supportsBold: false,
     wordFamily: "ClippingYuanti, Yuanti SC, YouYuan, Microsoft YaHei, sans-serif",
   },
   handwrite: {
     cssFamily: '"ClippingHandwrite", "ClippingKaiti", "Kaiti SC", STKaiti, KaiTi, serif',
     pdfPath: "assets/fonts/ZhiMangXing-Regular.ttf",
     remotePdfPath: "https://raw.githubusercontent.com/google/fonts/main/ofl/zhimangxing/ZhiMangXing-Regular.ttf",
-    pdfSubset: true,
+    pdfSubset: false,
+    supportsBold: false,
     wordFamily: "ClippingHandwrite, ClippingKaiti, Kaiti SC, STKaiti, KaiTi, serif",
   },
 };
@@ -638,6 +647,12 @@ function applyFontKey(fontKey) {
   state.layout.fontFamily = FONT_OPTIONS[normalizedKey].cssFamily;
 }
 
+function getEffectiveTextWeight(fontKey = state.layout.fontKey, weight = state.layout.textWeight) {
+  const config = FONT_OPTIONS[fontKey] || FONT_OPTIONS[defaultLayout.fontKey];
+  if (!config.supportsBold) return 400;
+  return Number(weight) >= 600 ? 700 : 400;
+}
+
 function normalizeLayoutFont() {
   const currentKey = state.layout.fontKey || inferFontKey(state.layout.fontFamily);
   applyFontKey(currentKey);
@@ -903,7 +918,8 @@ function getNoteLayout(layout) {
     fontSize: Math.max(11, layout.fontSize * 0.78),
     lineHeight: 1.65,
     textWeight: 400,
-    fontFamily: "Songti SC, STSong, serif",
+    fontKey: META_FONT_KEY,
+    fontFamily: FONT_OPTIONS[META_FONT_KEY].cssFamily,
   };
 }
 
@@ -958,12 +974,12 @@ function createPageElement(page, index, spec) {
   content.className = "paper-content";
   if (page.type === "cover") {
     content.innerHTML = `
-      <div class="cover-kicker">Kindle Clippings</div>
-      <h1 class="cover-title">${escapeHtml(page.bookTitle)}</h1>
-      <p class="cover-author">${escapeHtml(page.author)}</p>
+      <div class="cover-kicker" data-pdf-role="cover-kicker">Kindle Clippings</div>
+      <h1 class="cover-title" data-pdf-role="cover-title">${escapeHtml(page.bookTitle)}</h1>
+      <p class="cover-author" data-pdf-role="cover-author">${escapeHtml(page.author)}</p>
       <div class="cover-line"></div>
-      <p class="cover-meta">导出日期：${escapeHtml(page.exportDate)}</p>
-      <p class="cover-meta">共 ${page.bookCount} 条划线</p>
+      <p class="cover-meta" data-pdf-role="cover-meta">导出日期：${escapeHtml(page.exportDate)}</p>
+      <p class="cover-meta" data-pdf-role="cover-meta">共 ${page.bookCount} 条划线</p>
     `;
     article.appendChild(content);
     return article;
@@ -983,10 +999,12 @@ function createPageElement(page, index, spec) {
   list.className = "quote-list";
   page.items.forEach((item) => {
     const li = document.createElement("li");
+    li.dataset.itemId = item.id || "";
     if (!state.layout.showBullets) li.classList.add("no-bullet");
     if (state.layout.showBullets) {
       const bullet = document.createElement("span");
       bullet.className = "quote-bullet";
+      bullet.dataset.pdfRole = "marker";
       if (state.layout.bulletStyle === "bar") {
         bullet.classList.add("marker-bar");
       }
@@ -994,12 +1012,15 @@ function createPageElement(page, index, spec) {
       li.appendChild(bullet);
     }
     const text = document.createElement("span");
+    text.className = "quote-text";
+    text.dataset.pdfRole = "quote-text";
     text.textContent = item.content + (item.continued ? "" : "");
     li.appendChild(text);
     if (item.note) {
       const note = document.createElement("div");
       note.className = "quote-note";
-      note.innerHTML = `<strong>笔记：</strong>${escapeHtml(item.note)}`;
+      note.dataset.pdfRole = "note";
+      note.innerHTML = `<strong class="quote-note-label">笔记：</strong>${escapeHtml(item.note)}`;
       li.appendChild(note);
     }
     list.appendChild(li);
@@ -1009,6 +1030,7 @@ function createPageElement(page, index, spec) {
 
   const pageNumber = document.createElement("span");
   pageNumber.className = "page-number";
+  pageNumber.dataset.pdfRole = "page-number";
   if (page.headerType === "compact") {
     pageNumber.classList.add("hidden");
   }
@@ -1022,13 +1044,14 @@ function renderFullHeader(page) {
   const header = document.createElement("header");
   header.className = "paper-header";
   header.innerHTML = `
-    <h1>${escapeHtml(page.bookTitle)}</h1>
-    <p>${escapeHtml(page.author)}</p>
+    <h1 class="paper-title" data-pdf-role="title">${escapeHtml(page.bookTitle)}</h1>
+    <p class="paper-author" data-pdf-role="author">${escapeHtml(page.author)}</p>
   `;
   const rule = document.createElement("div");
   rule.className = "paper-rule";
   const count = document.createElement("p");
   count.className = "count-line";
+  count.dataset.pdfRole = "count";
   count.textContent = `共 ${page.bookCount} 条划线`;
   fragment.appendChild(header);
   fragment.appendChild(rule);
@@ -1040,8 +1063,8 @@ function renderCompactHeader(page, pageNumber) {
   const header = document.createElement("header");
   header.className = "compact-header";
   header.innerHTML = `
-    <span>${escapeHtml(page.bookTitle)} · ${escapeHtml(page.author)}</span>
-    <span>${pageNumber}</span>
+    <span data-pdf-role="compact-title">${escapeHtml(page.bookTitle)} · ${escapeHtml(page.author)}</span>
+    <span data-pdf-role="compact-page">${pageNumber}</span>
   `;
   return header;
 }
@@ -1067,7 +1090,7 @@ function createEmptyPageHtml(spec) {
 
 function wrapTextToLines(text, maxWidth, layout) {
   const context = getMeasureContext();
-  context.font = `${layout.textWeight} ${layout.fontSize}px ${layout.fontFamily}`;
+  context.font = `${getEffectiveTextWeight(layout.fontKey, layout.textWeight)} ${layout.fontSize}px ${layout.fontFamily}`;
   const lines = [];
   const paragraphs = text.split(/\n+/);
   paragraphs.forEach((paragraph, paragraphIndex) => {
@@ -1163,11 +1186,12 @@ function applyPageVariables(target, spec) {
   target.style.setProperty("--page-width", `${spec.width}px`);
   target.style.setProperty("--page-height", `${spec.height}px`);
   target.style.setProperty("--page-padding", paddingValue);
+  target.style.setProperty("--meta-font", FONT_OPTIONS[META_FONT_KEY].cssFamily);
   target.style.setProperty("--quote-font", state.layout.fontFamily);
   target.style.setProperty("--quote-size", `${state.layout.fontSize}px`);
   target.style.setProperty("--quote-line", state.layout.lineHeight);
   target.style.setProperty("--quote-gap", `${state.layout.paragraphGap}px`);
-  target.style.setProperty("--quote-weight", state.layout.textWeight);
+  target.style.setProperty("--quote-weight", getEffectiveTextWeight(state.layout.fontKey, state.layout.textWeight));
 }
 
 function renderPreviewScale() {
@@ -1857,6 +1881,8 @@ async function buildEmbeddedTextPdfBlob() {
     throwFriendlyPdfError("PDF 文本导出库尚未加载完成，请稍后再试。");
   }
   await waitForFonts();
+  await nextFrame();
+  await nextFrame();
   const { PDFDocument } = window.PDFLib;
   const pdfDoc = await PDFDocument.create();
   pdfDoc.registerFontkit(window.fontkit);
@@ -1864,31 +1890,333 @@ async function buildEmbeddedTextPdfBlob() {
   const spec = getPageSpec();
   const pageWidthPt = mmToPt(spec.pdf[0]);
   const pageHeightPt = mmToPt(spec.pdf[1]);
+  const measuredPages = await measurePreviewPagesForPdf(spec);
+  if (!measuredPages.length) {
+    throwFriendlyPdfError("没有可导出的分页内容。");
+  }
   const embeddedFontCache = new Map();
-  const contentFont = await embedConfiguredFont(pdfDoc, state.layout.fontKey, embeddedFontCache);
-  const metaFont = await embedConfiguredFont(pdfDoc, META_FONT_KEY, embeddedFontCache);
-  const fonts = { content: contentFont, meta: metaFont };
+  const fontRegistry = await createMeasuredPdfFontRegistry(pdfDoc, measuredPages, embeddedFontCache);
 
-  state.pages.forEach((pageData, pageIndex) => {
+  measuredPages.forEach((pageData) => {
     const pdfPage = pdfDoc.addPage([pageWidthPt, pageHeightPt]);
-    drawEmbeddedPdfPage(pdfPage, pageData, pageIndex, spec, pageWidthPt, pageHeightPt, fonts);
+    drawMeasuredPdfPage(pdfPage, pageData, spec, pageWidthPt, pageHeightPt, fontRegistry);
   });
 
   const bytes = await pdfDoc.save({ useObjectStreams: true });
   return new Blob([bytes], { type: "application/pdf" });
 }
 
-async function embedConfiguredFont(pdfDoc, fontKey, embeddedFontCache = new Map()) {
+async function measurePreviewPagesForPdf(spec) {
+  if (!getPageElements().length && state.pages.length) {
+    renderPreview();
+    await waitForFonts();
+    await nextFrame();
+  }
+  const measuredPages = [];
+  const pageElements = getPageElements();
+  for (const pageElement of pageElements) {
+    const { page, cleanup } = createExportPageClone(pageElement, spec);
+    await waitForFonts();
+    await nextFrame();
+    await nextFrame();
+    try {
+      measuredPages.push(measurePdfPageFromElement(page));
+    } finally {
+      cleanup();
+    }
+  }
+  return measuredPages;
+}
+
+function measurePdfPageFromElement(page) {
+  const pageRect = page.getBoundingClientRect();
+  const pageStyle = window.getComputedStyle(page);
+  const background = flattenCssColor(pageStyle.backgroundColor || getThemeColors(state.layout.backgroundTheme).background);
+  const rects = [];
+  const texts = [];
+
+  page.querySelectorAll(".paper-rule, .cover-line").forEach((element) => {
+    const style = window.getComputedStyle(element);
+    const box = getRelativeBox(element, pageRect);
+    if (box) {
+      rects.push({ ...box, color: flattenCssColor(style.backgroundColor, background) });
+    }
+  });
+
+  page.querySelectorAll(".compact-header").forEach((element) => {
+    const style = window.getComputedStyle(element);
+    const borderWidth = parseCssPx(style.borderBottomWidth);
+    if (borderWidth > 0) {
+      const box = getRelativeBox(element, pageRect);
+      if (!box) return;
+      rects.push({
+        x: box.x,
+        y: box.y + box.height - borderWidth,
+        width: box.width,
+        height: borderWidth,
+        color: flattenCssColor(style.borderBottomColor, background),
+      });
+    }
+  });
+
+  page.querySelectorAll(".quote-note").forEach((element) => {
+    const style = window.getComputedStyle(element);
+    const borderWidth = parseCssPx(style.borderLeftWidth);
+    if (borderWidth > 0) {
+      const box = getRelativeBox(element, pageRect);
+      if (!box) return;
+      rects.push({
+        x: box.x,
+        y: box.y,
+        width: borderWidth,
+        height: box.height,
+        color: flattenCssColor(style.borderLeftColor, background),
+      });
+    }
+  });
+
+  page.querySelectorAll(".quote-bullet.marker-bar").forEach((element) => {
+    const marker = measureBarMarker(element, pageRect, background);
+    if (marker) rects.push(marker);
+  });
+
+  page
+    .querySelectorAll(
+      [
+        ".cover-kicker",
+        ".cover-title",
+        ".cover-author",
+        ".cover-meta",
+        ".paper-title",
+        ".paper-author",
+        ".count-line",
+        ".compact-header span",
+        ".page-number",
+        ".quote-text",
+        ".quote-note",
+        ".quote-bullet:not(.marker-bar)",
+      ].join(", ")
+    )
+    .forEach((element) => {
+      texts.push(...measureTextElementForPdf(element, pageRect, background));
+    });
+
+  return { background, rects, texts };
+}
+
+function getRelativeBox(element, pageRect) {
+  if (!isElementVisible(element)) return null;
+  const rect = element.getBoundingClientRect();
+  return {
+    x: rect.left - pageRect.left,
+    y: rect.top - pageRect.top,
+    width: rect.width,
+    height: rect.height,
+  };
+}
+
+function measureBarMarker(element, pageRect, background) {
+  if (!isElementVisible(element)) return null;
+  const box = getRelativeBox(element, pageRect);
+  if (!box) return null;
+  const style = window.getComputedStyle(element);
+  const before = window.getComputedStyle(element, "::before");
+  const width = parseCssPx(before.width, 4);
+  const top = parseCssPx(before.top, 7);
+  const bottom = parseCssPx(before.bottom, 7);
+  return {
+    x: box.x + box.width / 2 - width / 2,
+    y: box.y + top,
+    width,
+    height: Math.max(parseCssPx(before.minHeight, 18), box.height - top - bottom),
+    color: flattenCssColor(style.color, background),
+    radius: parseCssPx(before.borderRadius),
+  };
+}
+
+function measureTextElementForPdf(element, pageRect, background) {
+  if (!isElementVisible(element)) return [];
+  const segments = [];
+  getTextNodes(element).forEach((node) => {
+    segments.push(...measureTextNodeForPdf(node, pageRect, background));
+  });
+  return segments;
+}
+
+function measureTextNodeForPdf(node, pageRect, background) {
+  const rawText = node.nodeValue || "";
+  if (!rawText.trim()) return [];
+  const element = node.parentElement;
+  if (!element || !isElementVisible(element)) return [];
+  const style = window.getComputedStyle(element);
+  const fontKey = inferFontKey(style.fontFamily);
+  const fontSize = parseCssPx(style.fontSize, state.layout.fontSize);
+  const lineHeight = parseCssLineHeight(style.lineHeight, fontSize);
+  const fontWeight = getEffectiveTextWeight(fontKey, parseCssFontWeight(style.fontWeight));
+  const letterSpacing = parseCssPx(style.letterSpacing);
+  const color = flattenCssColor(style.color, background);
+  const baselineOffset = Math.max(fontSize * 0.72, (lineHeight - fontSize) / 2 + fontSize * 0.86);
+  const range = document.createRange();
+  const groups = [];
+  let offset = 0;
+
+  Array.from(rawText).forEach((char) => {
+    const nextOffset = offset + char.length;
+    range.setStart(node, offset);
+    range.setEnd(node, nextOffset);
+    offset = nextOffset;
+    const rect = getFirstVisibleRect(range);
+    if (!rect) {
+      const last = groups[groups.length - 1];
+      if (last && /\s/.test(char)) last.text += char;
+      return;
+    }
+    const x = rect.left - pageRect.left;
+    const y = rect.top - pageRect.top;
+    if (Math.abs(letterSpacing) > 0.01) {
+      groups.push({ text: char, x, y, height: rect.height });
+      return;
+    }
+    const last = groups[groups.length - 1];
+    if (last && Math.abs(last.y - y) < Math.max(4, lineHeight * 0.5)) {
+      last.text += char;
+      last.y = Math.min(last.y, y);
+      last.height = Math.max(last.height, rect.height);
+    } else {
+      groups.push({ text: char, x, y, height: rect.height });
+    }
+  });
+  range.detach?.();
+
+  return groups
+    .filter((group) => group.text)
+    .map((group) => ({
+      text: group.text,
+      x: group.x,
+      y: group.y,
+      fontSize,
+      lineHeight,
+      baselineOffset,
+      fontKey,
+      fontWeight,
+      color,
+    }));
+}
+
+function getTextNodes(root) {
+  const nodes = [];
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let node = walker.nextNode();
+  while (node) {
+    nodes.push(node);
+    node = walker.nextNode();
+  }
+  return nodes;
+}
+
+function getFirstVisibleRect(range) {
+  const rects = Array.from(range.getClientRects());
+  return rects.find((rect) => rect.width > 0 && rect.height > 0) || null;
+}
+
+function isElementVisible(element) {
+  const style = window.getComputedStyle(element);
+  if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity) === 0) return false;
+  const rect = element.getBoundingClientRect();
+  return rect.width > 0 && rect.height > 0;
+}
+
+async function createMeasuredPdfFontRegistry(pdfDoc, measuredPages, embeddedFontCache) {
+  const requests = new Map();
+  measuredPages.forEach((page) => {
+    page.texts.forEach((text) => {
+      const fontKey = FONT_OPTIONS[text.fontKey] ? text.fontKey : defaultLayout.fontKey;
+      const weight = getEffectiveTextWeight(fontKey, text.fontWeight);
+      requests.set(getPdfFontCacheKey(fontKey, weight), { fontKey, weight });
+    });
+  });
+  if (!requests.size) {
+    requests.set(getPdfFontCacheKey(META_FONT_KEY, 400), { fontKey: META_FONT_KEY, weight: 400 });
+  }
+  const fonts = new Map();
+  for (const request of requests.values()) {
+    fonts.set(
+      getPdfFontCacheKey(request.fontKey, request.weight),
+      await embedConfiguredFont(pdfDoc, request.fontKey, embeddedFontCache, request.weight)
+    );
+  }
+  return {
+    get(fontKey, weight) {
+      const normalizedKey = FONT_OPTIONS[fontKey] ? fontKey : defaultLayout.fontKey;
+      const normalizedWeight = getEffectiveTextWeight(normalizedKey, weight);
+      const key = getPdfFontCacheKey(normalizedKey, normalizedWeight);
+      return fonts.get(key) || fonts.get(getPdfFontCacheKey(META_FONT_KEY, 400)) || Array.from(fonts.values())[0];
+    },
+  };
+}
+
+function getPdfFontCacheKey(fontKey, weight) {
+  return `${fontKey}:${Number(weight) >= 600 ? 700 : 400}`;
+}
+
+function drawMeasuredPdfPage(pdfPage, pageData, spec, pageWidthPt, pageHeightPt, fontRegistry) {
+  const scale = pageWidthPt / spec.width;
+  drawEmbeddedRect(pdfPage, 0, 0, spec.width, spec.height, pageData.background, scale, pageHeightPt);
+  pageData.rects.forEach((rect) => {
+    drawEmbeddedRect(pdfPage, rect.x, rect.y, rect.width, rect.height, rect.color, scale, pageHeightPt);
+  });
+  pageData.texts.forEach((text) => {
+    const font = fontRegistry.get(text.fontKey, text.fontWeight);
+    drawMeasuredText(pdfPage, text, scale, pageHeightPt, font);
+  });
+}
+
+function drawMeasuredText(pdfPage, text, scale, pageHeightPt, font) {
+  pdfPage.drawText(String(text.text || ""), {
+    x: text.x * scale,
+    y: pageHeightPt - (text.y + text.baselineOffset) * scale,
+    size: text.fontSize * scale,
+    font,
+    color: toPdfRgb(text.color),
+  });
+}
+
+function parseCssPx(value, fallback = 0) {
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function parseCssLineHeight(value, fontSize) {
+  if (!value || value === "normal") return fontSize * 1.2;
+  return parseCssPx(value, fontSize * 1.2);
+}
+
+function parseCssFontWeight(value) {
+  if (value === "bold") return 700;
+  if (value === "normal") return 400;
+  return parseCssPx(value, 400);
+}
+
+function flattenCssColor(color, background = "#ffffff") {
+  const fg = parseColor(color);
+  const bg = parseColor(background);
+  const alpha = fg.a ?? 1;
+  return `rgb(${Math.round(fg.r * alpha + bg.r * (1 - alpha))}, ${Math.round(fg.g * alpha + bg.g * (1 - alpha))}, ${Math.round(fg.b * alpha + bg.b * (1 - alpha))})`;
+}
+
+async function embedConfiguredFont(pdfDoc, fontKey, embeddedFontCache = new Map(), weight = 400) {
   const normalizedKey = FONT_OPTIONS[fontKey] ? fontKey : defaultLayout.fontKey;
   const config = FONT_OPTIONS[normalizedKey];
-  const path = config.pdfPath || FONT_OPTIONS.songti.pdfPath;
+  const useBold = Number(weight) >= 600 && config.supportsBold && config.pdfBoldPath;
+  const path = useBold ? config.pdfBoldPath : config.pdfPath || FONT_OPTIONS.songti.pdfPath;
+  const fallbackPath = useBold ? config.remotePdfBoldPath : config.remotePdfPath;
   const subset = config.pdfSubset !== false;
   const cacheKey = `${path}__${subset ? "subset" : "full"}`;
   if (embeddedFontCache.has(cacheKey)) {
     return embeddedFontCache.get(cacheKey);
   }
   try {
-    const bytes = await loadPdfFontBytes(path, config.remotePdfPath);
+    const bytes = await loadPdfFontBytes(path, fallbackPath);
     const font = await pdfDoc.embedFont(bytes, { subset });
     embeddedFontCache.set(cacheKey, font);
     return font;
@@ -2148,12 +2476,13 @@ function drawEmbeddedTriangle(pdfPage, xPx, yPx, widthPx, heightPx, color, scale
 
 function toPdfRgb(color, opacity = 1) {
   const { rgb } = window.PDFLib;
-  const { r, g, b } = parseColor(color);
-  if (opacity >= 1) return rgb(r / 255, g / 255, b / 255);
+  const { r, g, b, a } = parseColor(color);
+  const alpha = opacity * (a ?? 1);
+  if (alpha >= 1) return rgb(r / 255, g / 255, b / 255);
   return rgb(
-    (r * opacity + 255 * (1 - opacity)) / 255,
-    (g * opacity + 255 * (1 - opacity)) / 255,
-    (b * opacity + 255 * (1 - opacity)) / 255
+    (r * alpha + 255 * (1 - alpha)) / 255,
+    (g * alpha + 255 * (1 - alpha)) / 255,
+    (b * alpha + 255 * (1 - alpha)) / 255
   );
 }
 
@@ -2408,7 +2737,7 @@ function pdfRgb(color, opacity = 1) {
 }
 
 function parseColor(color) {
-  if (!color) return { r: 0, g: 0, b: 0 };
+  if (!color) return { r: 0, g: 0, b: 0, a: 1 };
   if (color.startsWith("#")) {
     const hex = color.slice(1);
     const full = hex.length === 3 ? hex.split("").map((char) => char + char).join("") : hex;
@@ -2416,11 +2745,19 @@ function parseColor(color) {
       r: parseInt(full.slice(0, 2), 16),
       g: parseInt(full.slice(2, 4), 16),
       b: parseInt(full.slice(4, 6), 16),
+      a: 1,
     };
   }
-  const match = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-  if (match) return { r: Number(match[1]), g: Number(match[2]), b: Number(match[3]) };
-  return { r: 0, g: 0, b: 0 };
+  const match = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([.\d]+))?/);
+  if (match) {
+    return {
+      r: Number(match[1]),
+      g: Number(match[2]),
+      b: Number(match[3]),
+      a: match[4] === undefined ? 1 : Number(match[4]),
+    };
+  }
+  return { r: 0, g: 0, b: 0, a: 1 };
 }
 
 function utf16BeHex(text) {

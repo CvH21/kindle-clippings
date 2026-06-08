@@ -1,12 +1,32 @@
 @font-face {
   font-family: "ClippingSongti";
   src: url("./assets/fonts/NotoSerifSC-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "ClippingSongti";
+  src: url("./assets/fonts/NotoSerifSC-Bold.ttf") format("truetype");
+  font-weight: 700 900;
+  font-style: normal;
   font-display: swap;
 }
 
 @font-face {
   font-family: "ClippingHeiti";
   src: url("./assets/fonts/NotoSansSC-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "ClippingHeiti";
+  src: url("./assets/fonts/NotoSansSC-Bold.ttf") format("truetype");
+  font-weight: 700 900;
+  font-style: normal;
   font-display: swap;
 }
 
@@ -840,16 +860,16 @@ input[type="range"] {
 .paper-header h1 {
   margin: 0 0 12px;
   color: #65311e;
-  font-family: Songti SC, STSong, serif;
+  font-family: var(--meta-font, "ClippingSongti", "Songti SC", STSong, serif);
   font-size: 34px;
   line-height: 1.2;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .paper-header p {
   margin: 0;
   color: #8b806f;
-  font-family: Songti SC, STSong, serif;
+  font-family: var(--meta-font, "ClippingSongti", "Songti SC", STSong, serif);
   font-size: 19px;
 }
 
@@ -862,6 +882,7 @@ input[type="range"] {
 .count-line {
   margin: 0 0 28px;
   color: #aca18e;
+  font-family: var(--meta-font, "ClippingSongti", "Songti SC", STSong, serif);
   font-size: 13px;
 }
 
@@ -875,7 +896,7 @@ input[type="range"] {
   padding-bottom: 9px;
   border-bottom: 1px solid rgba(138, 112, 63, 0.14);
   color: #9a8f7e;
-  font-family: Songti SC, STSong, serif;
+  font-family: var(--meta-font, "ClippingSongti", "Songti SC", STSong, serif);
   font-size: 13px;
   line-height: 1.25;
 }
@@ -914,7 +935,7 @@ input[type="range"] {
   padding-left: 12px;
   border-left: 3px solid rgba(117, 102, 79, 0.35);
   color: #817568;
-  font-family: Songti SC, STSong, serif;
+  font-family: var(--meta-font, "ClippingSongti", "Songti SC", STSong, serif);
   font-size: calc(var(--quote-size, 20px) * 0.78);
   line-height: 1.65;
   white-space: pre-wrap;
@@ -932,6 +953,7 @@ input[type="range"] {
 
 .cover-kicker {
   color: #8a6d45;
+  font-family: var(--meta-font, "ClippingSongti", "Songti SC", STSong, serif);
   font-size: 15px;
   letter-spacing: 3px;
   text-transform: uppercase;
@@ -940,7 +962,7 @@ input[type="range"] {
 .cover-title {
   margin: 24px 0 16px;
   color: #65311e;
-  font-family: Songti SC, STSong, serif;
+  font-family: var(--meta-font, "ClippingSongti", "Songti SC", STSong, serif);
   font-size: 46px;
   line-height: 1.15;
 }
@@ -949,7 +971,7 @@ input[type="range"] {
 .cover-meta {
   margin: 0;
   color: #8b806f;
-  font-family: Songti SC, STSong, serif;
+  font-family: var(--meta-font, "ClippingSongti", "Songti SC", STSong, serif);
   font-size: 20px;
 }
 
@@ -976,7 +998,7 @@ input[type="range"] {
   height: calc(var(--quote-size, 20px) * var(--quote-line, 1.8));
   transform: none;
   color: #75664f;
-  font-family: Songti SC, STSong, serif;
+  font-family: var(--meta-font, "ClippingSongti", "Songti SC", STSong, serif);
   font-size: 0.48em;
   line-height: 1;
 }
@@ -1007,6 +1029,7 @@ input[type="range"] {
   right: 18px;
   bottom: 14px;
   color: rgba(117, 109, 98, 0.58);
+  font-family: var(--meta-font, "ClippingSongti", "Songti SC", STSong, serif);
   font-size: 12px;
 }
 
