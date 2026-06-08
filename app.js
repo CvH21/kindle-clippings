@@ -5,9 +5,7 @@ const PAGE_PRESETS = {
   "9:16": { label: "9-16", width: 720, height: 1280, pdf: [180, 320] },
 };
 const STORAGE_KEY = "kindle-clippings-exporter-state-v2";
-const PNG_CAPTURE_SCALE = 2;
-const PDF_CAPTURE_SCALE = 1.45;
-const PDF_JPEG_QUALITY = 0.86;
+const PNG_CAPTURE_SCALE = 4;
 const TEXT_PDF_CAPTURE_SCALE = 2;
 const META_FONT_KEY = "songti";
 const PDF_A4_SPEC = PAGE_PRESETS.A4;
@@ -131,7 +129,6 @@ function cacheElements() {
     "paperPages",
     "exportPng",
     "exportPdf",
-    "exportImagePdf",
     "exportWord",
     "exportMarkdown",
     "zoomOut",
@@ -191,7 +188,6 @@ function bindControls() {
   els.clearClippings.addEventListener("click", clearClippings);
   els.exportPng.addEventListener("click", exportPngPages);
   els.exportPdf.addEventListener("click", exportPdfPages);
-  els.exportImagePdf.addEventListener("click", exportImagePdfPages);
   els.exportWord.addEventListener("click", exportWordPages);
   els.exportMarkdown.addEventListener("click", exportMarkdown);
 
@@ -1411,40 +1407,6 @@ async function exportPdfPages() {
   await exportPdfTextBased();
 }
 
-async function exportImagePdfPages() {
-  if (!window.html2canvas || !window.jspdf?.jsPDF) {
-    setStatus("导出库尚未加载完成，请稍后再试。");
-    return;
-  }
-  const pages = getPageElements();
-  if (!state.pages.length || !pages.length) {
-    setStatus("没有可导出的分页内容。");
-    return;
-  }
-  setStatus(`正在生成 ${pages.length} 页高清 PDF...`);
-  const { jsPDF } = window.jspdf;
-  const spec = getPageSpec();
-  const pdfWidth = spec.pdf[0];
-  const pdfHeight = spec.pdf[1];
-  const pdf = new jsPDF({
-    orientation: pdfWidth > pdfHeight ? "l" : "p",
-    unit: "mm",
-    format: [pdfWidth, pdfHeight],
-  });
-
-  for (let index = 0; index < pages.length; index += 1) {
-    if (index > 0) {
-      pdf.addPage([pdfWidth, pdfHeight], pdfWidth > pdfHeight ? "l" : "p");
-    }
-    const canvas = await capturePageCanvas(pages[index], { scale: PDF_CAPTURE_SCALE });
-    const imageData = canvas.toDataURL("image/jpeg", PDF_JPEG_QUALITY);
-    pdf.addImage(imageData, "JPEG", 0, 0, pdfWidth, pdfHeight, undefined, "MEDIUM");
-  }
-
-  pdf.save(`${safeFileName(state.clippings[0]?.bookTitle || "Kindle-Clippings")}-划线排版.pdf`);
-  setStatus("高清 PDF 已生成。");
-}
-
 async function exportPdfTextBased() {
   const items = getPreviewItems();
   if (!items.length && !state.showCoverPage) {
@@ -1452,16 +1414,16 @@ async function exportPdfTextBased() {
     return;
   }
   try {
-    setStatus("正在生成文字 PDF...");
+    setStatus("正在生成 PDF...");
     const blob = await buildEmbeddedTextPdfBlob();
     const url = URL.createObjectURL(blob);
     downloadDataUrl(url, `${safeFileName(items[0]?.bookTitle || state.bookInfo.title || "Kindle-Clippings")}-划线排版.pdf`);
     window.setTimeout(() => URL.revokeObjectURL(url), 1200);
-    setStatus("文字 PDF 已生成。");
+    setStatus("PDF 已生成。");
   } catch (error) {
     console.error(error);
     const detail = error?.friendlyMessage || error?.message || "";
-    setStatus(detail ? `文字 PDF 生成失败：${detail}` : "文字 PDF 生成失败，请确认所选字体文件已放入 assets/fonts。");
+    setStatus(detail ? `PDF 生成失败：${detail}` : "PDF 生成失败，请确认所选字体文件已放入 assets/fonts。");
   }
 }
 

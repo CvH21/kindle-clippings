@@ -1,6 +1,6 @@
 # Kindle Clippings
 
-公开 Beta 版的 Kindle 划线排版工具。它可以在浏览器里导入 Kindle `My Clippings.txt`，整理划线内容，并导出 PNG、文字 PDF、高清 PDF、Word 和 Markdown。
+公开 Beta 版的 Kindle 划线排版工具。它可以在浏览器里导入 Kindle `My Clippings.txt`，整理划线内容，并导出高分辨率 PNG、PDF、Word 和 Markdown。
 
 ## 当前状态
 
@@ -9,7 +9,8 @@
 - 数据处理：用户文件只在本地浏览器读取，不上传服务器
 - 本地存储：排版设置和导入内容会保存在当前浏览器的 `localStorage`
 - 主要限制：导出功能依赖浏览器能力、中文字体文件和 CDN 加载状态
-- 文字 PDF：会嵌入当前选择的正文字体，尽量保持和预览一致，并保留文字可选中/可复制
+- PNG：按 4 倍倍率导出，适合放大查看和分享
+- PDF：以预览画面作为可见层，严格保持和预览一致，并叠加透明文字层用于选中/复制
 
 ## 上线文件
 
@@ -48,7 +49,7 @@ README.md
 
 - 打开部署网址，确认页面样式、图标和中文字体正常。
 - 导入一份 Kindle `My Clippings.txt`，确认能识别书名、作者、划线数量和分页。
-- 测试导出 Markdown、Word、PNG、文字 PDF、高清 PDF。
+- 测试导出 Markdown、Word、高分辨率 PNG 和 PDF。
 - 至少在 Chrome 和 Safari 各测一次。
 - 不导入内容时点击各导出按钮，应显示“没有可导出内容”一类提示。
 - 导入多本书的 clippings 文件，确认列表分组和预览分页正常。
@@ -58,7 +59,6 @@ README.md
 页面通过 CDN 加载以下库：
 
 - `html2canvas`
-- `jsPDF`
 - `pdf-lib`
 - `@pdf-lib/fontkit`
 - `lucide`
@@ -67,7 +67,7 @@ README.md
 
 ## 字体说明
 
-文字 PDF 使用 `assets/fonts/` 中的本地字体文件。圆体使用 Resource Han Rounded CN Regular，来源于 Resource Han Rounded 项目；该项目说明字体部分采用 SIL Open Font License。
+PDF 的透明文字层使用 `assets/fonts/` 中的本地字体文件。圆体使用 Resource Han Rounded CN Regular，来源于 Resource Han Rounded 项目；该项目说明字体部分采用 SIL Open Font License。
 
 - 项目说明：https://github.com/CyanoHao/Resource-Han-Rounded
 - 字体信息：https://fontmeme.com/fonts/resource-han-rounded-cn-font/
