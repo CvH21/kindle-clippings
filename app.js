@@ -7,6 +7,7 @@ const PAGE_PRESETS = {
 const STORAGE_KEY = "kindle-clippings-exporter-state-v2";
 const PNG_CAPTURE_SCALE = 4;
 const TEXT_PDF_CAPTURE_SCALE = 2;
+const DEFAULT_PREVIEW_ZOOM = 0.85;
 const META_FONT_KEY = "songti";
 const PDF_A4_SPEC = PAGE_PRESETS.A4;
 const PDF_FONT_FILES = {
@@ -98,7 +99,8 @@ const state = {
   search: "",
   selectedId: "",
   statusMode: "count",
-  zoom: 0.85,
+  mobileView: "content",
+  zoom: DEFAULT_PREVIEW_ZOOM,
 };
 
 const els = {};
@@ -110,6 +112,7 @@ document.addEventListener("DOMContentLoaded", () => {
   bindControls();
   loadState();
   renderAll();
+  setMobileView(state.mobileView, false);
   renderIcons();
   window.setTimeout(renderIcons, 250);
   window.setTimeout(renderIcons, 900);
@@ -120,6 +123,7 @@ function cacheElements() {
     "bookTitle",
     "bookAuthor",
     "fileInput",
+    "mobileViewTabs",
     "showPasteImport",
     "pasteImportPanel",
     "pasteImportText",
@@ -198,6 +202,14 @@ function bindControls() {
   els.exportPdf.addEventListener("click", exportPdfPages);
   els.exportWord.addEventListener("click", exportWordPages);
   els.exportMarkdown.addEventListener("click", exportMarkdown);
+  els.mobileViewTabs.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-mobile-view]");
+    if (!button) return;
+    setMobileView(button.dataset.mobileView);
+  });
+  window.addEventListener("resize", () => {
+    renderPreviewScale();
+  });
 
   els.zoomOut.addEventListener("click", () => {
     state.zoom = Math.max(0.45, +(state.zoom - 0.06).toFixed(2));
@@ -1235,8 +1247,41 @@ function applyPageVariables(target, spec) {
 }
 
 function renderPreviewScale() {
-  els.paperWrap.style.transform = `scale(${state.zoom})`;
-  els.zoomValue.textContent = `${Math.round(state.zoom * 100)}%`;
+  const spec = getPageSpec();
+  const scale = getEffectivePreviewScale(spec);
+  els.paperWrap.style.transform = `scale(${scale})`;
+  els.zoomValue.textContent = `${Math.round(scale * 100)}%`;
+  if (isMobileLayout()) {
+    const pageCount = Math.max(1, state.pages.length || els.paperPages.querySelectorAll(".paper").length || 1);
+    const totalHeight = spec.height * pageCount + Math.max(0, pageCount - 1) * 26;
+    els.paperWrap.style.width = `${Math.ceil(spec.width * scale)}px`;
+    els.paperWrap.style.height = `${Math.ceil(totalHeight * scale)}px`;
+  } else {
+    els.paperWrap.style.width = "";
+    els.paperWrap.style.height = "";
+  }
+}
+
+function getEffectivePreviewScale(spec = getPageSpec()) {
+  if (!isMobileLayout()) return state.zoom;
+  const availableWidth = Math.max(280, window.innerWidth - 28);
+  const fitScale = Math.min(1, availableWidth / spec.width);
+  return Math.max(0.28, Math.min(1.25, fitScale * (state.zoom / DEFAULT_PREVIEW_ZOOM)));
+}
+
+function isMobileLayout() {
+  return window.matchMedia?.("(max-width: 980px)").matches || window.innerWidth <= 980;
+}
+
+function setMobileView(view, shouldScroll = true) {
+  const nextView = ["settings", "content", "preview"].includes(view) ? view : "content";
+  state.mobileView = nextView;
+  document.body.dataset.mobileView = nextView;
+  selectButtonByValue(els.mobileViewTabs, "mobileView", nextView);
+  renderPreviewScale();
+  if (shouldScroll && isMobileLayout()) {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 }
 
 function updateRangeLabels() {
